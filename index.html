@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Society Accounts</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#1d2733;--muted:#6b7785;--line:#e3e8ee;--pri:#0f766e;--pri2:#e6f4f2;--red:#c0392b;--red2:#fdecea;--amb:#b7791f;--amb2:#fff6e5;--grn:#2f855a;--grn2:#e8f6ee}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+button,input,select,textarea{font:inherit}
+.hide{display:none!important}
+/* login */
+.center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;width:100%;max-width:380px}
+.box h1{margin:0 0 4px;font-size:20px}.box p{color:var(--muted);margin:0 0 18px}
+/* layout */
+header{background:var(--pri);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;flex:1}
+header .who{font-size:12px;opacity:.9}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.b-admin{background:#fff;color:var(--pri)}.b-viewer{background:rgba(255,255,255,.2);color:#fff}
+.month-bar{display:flex;align-items:center;gap:6px}
+.month-bar input{padding:6px 8px;border-radius:6px;border:0}
+.month-bar button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:6px;padding:6px 10px;cursor:pointer}
+nav{background:var(--card);border-bottom:1px solid var(--line);display:flex;gap:2px;padding:0 12px;overflow-x:auto}
+nav button{background:none;border:0;padding:12px 14px;cursor:pointer;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+nav button.on{color:var(--pri);border-color:var(--pri)}
+main{padding:18px;max-width:1300px;margin:0 auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card .l{color:var(--muted);font-size:12px}.card .v{font-size:22px;font-weight:700;margin-top:4px}.card .s{font-size:12px;color:var(--muted);margin-top:2px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:16px}
+.ph{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ph h2{font-size:15px;margin:0;flex:1;min-width:140px}
+.ph input,.ph select{padding:6px 8px;border:1px solid var(--line);border-radius:6px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:#f8fafb;font-size:12px;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right}
+tfoot td{font-weight:700;background:#f8fafb}
+.btn{background:var(--pri);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500}
+.btn.sec{background:var(--pri2);color:var(--pri)}
+.btn.red{background:var(--red2);color:var(--red)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:default}
+.st{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.st-Paid{background:var(--grn2);color:var(--grn)}.st-Pending{background:var(--red2);color:var(--red)}.st-Partial{background:var(--amb2);color:var(--amb)}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+.chartbox{padding:14px;height:300px}
+/* forms */
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.f{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.err{color:var(--red);font-size:13px;margin-top:10px;min-height:16px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:480px;padding:20px}
+.modal h3{margin:0 0 6px}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.calc{background:var(--pri2);color:var(--pri);padding:10px;border-radius:6px;margin-top:12px;font-weight:600}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d2733;color:#fff;padding:10px 18px;border-radius:8px;z-index:99}
+.note{font-size:12px;color:var(--muted);padding:10px 14px}
+@media print{header,nav,.noprint,.btn{display:none!important}body{background:#fff}main{padding:0}.panel{border:0;break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="vLogin" class="center hide">
+  <div class="box">
+    <h1 id="loginTitle">Society Accounts</h1>
+    <p>Apne email aur password se login karein</p>
+    <label>Email</label><input id="lEmail" class="f" type="email">
+    <label>Password</label><input id="lPass" class="f" type="password">
+    <div class="err" id="lErr"></div>
+    <button class="btn" style="width:100%;margin-top:6px" onclick="doLogin()">Login</button>
+    <div id="demoInfo" class="hide" style="margin-top:16px;background:var(--amb2);border-radius:8px;padding:12px;font-size:13px;line-height:1.6">
+      <b>DEMO MODE</b> (abhi Firebase nahi juda, data sirf is browser mein hai)<br>
+      Admin: <b>admin@demo.com</b> / <b>admin123</b>
+      <button class="btn sm sec" onclick="lEmail.value='admin@demo.com';lPass.value='admin123';doLogin()">Login</button><br>
+      Viewer: <b>viewer@demo.com</b> / <b>viewer123</b>
+      <button class="btn sm sec" onclick="lEmail.value='viewer@demo.com';lPass.value='viewer123';doLogin()">Login</button><br>
+      <a href="#" onclick="try{localStorage.removeItem('socDemoDB3')}catch(e){};location.reload();return false" style="color:var(--amb)">Sab data saaf karein (khaali shuru)</a><br>
+      <a href="#" onclick="try{localStorage.removeItem('socDemoDB3');localStorage.setItem('socDemoSample','1')}catch(e){};location.reload();return false" style="color:var(--amb)">Sample data load karein</a>
+    </div>
+  </div>
+</div>
+
+<!-- FIRST ADMIN SETUP -->
+<div id="vBoot" class="center hide">
+  <div class="box">
+    <h1>First time setup</h1>
+    <p>Abhi koi admin nahi hai. Aap pehle admin ban jayenge.</p>
+    <label>Your name</label><input id="bName" class="f">
+    <div class="err" id="bErr"></div>
+    <button class="btn" style="width:100%;margin-top:6px" onclick="doBootstrap()">Make me Admin</button>
+    <button class="btn sec" style="width:100%;margin-top:8px" onclick="auth.signOut()">Logout</button>
+  </div>
+</div>
+
+<!-- NO ACCESS -->
+<div id="vNo" class="center hide">
+  <div class="box">
+    <h1>Access nahi hai</h1>
+    <p>Aapka account active nahi hai. Admin se contact karein.</p>
+    <button class="btn" onclick="auth.signOut()">Logout</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="vApp" class="hide">
+  <header>
+    <h1 id="hTitle">Society Accounts</h1>
+    <div class="month-bar noprint">
+      <button onclick="shiftMonth(-1)">◀</button>
+      <input type="month" id="mPick" onchange="setMonth(this.value)">
+      <button onclick="shiftMonth(1)">▶</button>
+    </div>
+    <div class="who"><span id="hUser"></span> <span id="hRole" class="badge"></span></div>
+    <button class="btn sec sm" onclick="auth.signOut()">Logout</button>
+  </header>
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+/* =========================================================
+   STEP 1: Apna Firebase config yahan paste karein
+   (Firebase Console > Project settings > Your apps > Web app)
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE"
+};
+const MAX_USERS = 25;
+const DEFAULT_CATEGORIES = ["Electricity","Water","Security","Housekeeping","Lift Maintenance","Repairs","Garden","Generator / Diesel","Stationery","Miscellaneous"];
+const PAY_MODES = ["Cash","UPI","Bank Transfer","Cheque"];
+
+/* =========================================================
+   DEMO MODE: config paste nahi hua to app browser-only chalega
+   (localStorage mein data). Config paste karte hi real Firebase.
+   ========================================================= */
+const DEMO = firebaseConfig.apiKey === "PASTE_HERE";
+if (DEMO) window.firebase = (function(){
+  const KEY="socDemoDB3", UKEY="socDemoUser";
+  let D=null,withSample=false;
+  try{D=JSON.parse(localStorage.getItem(KEY));withSample=localStorage.getItem("socDemoSample")==="1";localStorage.removeItem("socDemoSample");}catch(e){}
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}};
+  if(!D||!D.cols){D=demoSeed(withSample);save();}
+  const clone=o=>o===undefined?undefined:JSON.parse(JSON.stringify(o));
+  const col=n=>D.cols[n]||(D.cols[n]={});
+  const listeners=new Set();
+  const notify=()=>{save();setTimeout(()=>listeners.forEach(l=>l.fire()),0);};
+  const newId=()=>Math.random().toString(36).slice(2,12);
+  function snapDoc(c,id){const d=col(c)[id];return {id,exists:!!d,data:()=>clone(d)};}
+  function docRef(path){
+    const [c,id]=path.split("/");
+    return {id,_c:c,_id:id,
+      get:async()=>snapDoc(c,id),
+      set:async(data,opt)=>{col(c)[id]=opt&&opt.merge?{...(col(c)[id]||{}),...clone(data)}:clone(data);notify();},
+      update:async data=>{if(!col(c)[id])throw new Error("Record nahi mila");Object.assign(col(c)[id],clone(data));notify();},
+      delete:async()=>{delete col(c)[id];notify();},
+      onSnapshot(cb){const l={fire:()=>cb(snapDoc(c,id))};listeners.add(l);setTimeout(l.fire,0);return()=>listeners.delete(l);}
+    };
+  }
+  function query(c,filters){
+    function run(){
+      const ok=d=>filters.every(([f,op,v])=>op===">="?d[f]>=v:op==="<="?d[f]<=v:op==="=="?d[f]===v:true);
+      return {docs:Object.entries(col(c)).filter(([,d])=>ok(d)).map(([id,d])=>({id,data:()=>clone(d)}))};
+    }
+    return {
+      where:(f,op,v)=>query(c,[...filters,[f,op,v]]),
+      add:async data=>{const id=newId();col(c)[id]=clone(data);notify();return docRef(c+"/"+id);},
+      get:async()=>run(),
+      onSnapshot(cb){const l={fire:()=>cb(run())};listeners.add(l);setTimeout(l.fire,0);return()=>listeners.delete(l);}
+    };
+  }
+  let current=null;const authCbs=[];
+  try{const u=localStorage.getItem(UKEY);if(u)current=Object.values(D.accounts).find(a=>a.uid===u)||null;}catch(e){}
+  const userObj=a=>a?{uid:a.uid,email:a.email}:null;
+  const fireAuth=()=>authCbs.forEach(cb=>cb(userObj(current)));
+  const mainAuth={
+    get currentUser(){return userObj(current);},
+    onAuthStateChanged(cb){authCbs.push(cb);setTimeout(()=>cb(userObj(current)),0);},
+    async signInWithEmailAndPassword(e,p){const a=D.accounts[String(e).toLowerCase()];if(!a||a.pass!==p)throw new Error("bad login");current=a;try{localStorage.setItem(UKEY,a.uid);}catch(x){}fireAuth();},
+    async signOut(){current=null;try{localStorage.removeItem(UKEY);}catch(x){}fireAuth();}
+  };
+  const secAuth={
+    async createUserWithEmailAndPassword(e,p){e=String(e).toLowerCase();
+      if(D.accounts[e]){const err=new Error("exists");err.code="auth/email-already-in-use";throw err;}
+      const a={uid:newId(),email:e,pass:p};D.accounts[e]=a;save();return {user:{uid:a.uid}};},
+    async signOut(){}
+  };
+  const apps=[];
+  return {
+    apps,
+    initializeApp(cfg,name){const app={name:name||"[DEFAULT]",auth:()=>name?secAuth:mainAuth};apps.push(app);return app;},
+    auth:()=>mainAuth,
+    firestore:()=>({doc:docRef,collection:c=>query(c,[]),
+      batch(){const ops=[];return {set:(ref,data)=>ops.push([ref,data]),async commit(){ops.forEach(([r,d])=>col(r._c)[r._id]=clone(d));notify();}};}})
+  };
+})();
+
+function demoSeed(withSample){
+  const now=curMonth(),fy=fyOf(now);
+  const months=fyMonths(fy).filter(m=>m<=now).slice(-4);
+  const cols={
+    users:{u1:{name:"Demo Admin",email:"admin@demo.com",role:"admin",active:true},u2:{name:"Demo Viewer",email:"viewer@demo.com",role:"viewer",active:true}},
+    meta:{bootstrap:{uid:"u1"}},
+    settings:{main:{societyName:"",address:"",categories:DEFAULT_CATEGORIES,startMonth:"",openingBalance:0}},
+    flats:{},staff:{},expenses:{},salaries:{},maintenance:{}
+  };
+  const accounts={"admin@demo.com":{uid:"u1",email:"admin@demo.com",pass:"admin123"},"viewer@demo.com":{uid:"u2",email:"viewer@demo.com",pass:"viewer123"}};
+  if(!withSample)return {cols,accounts};
+  cols.settings.main={societyName:"Green Valley Apartments",address:"Sector 62, Noida",categories:DEFAULT_CATEGORIES,startMonth:months[0],openingBalance:150000};
+  const owners=["Sharma ji","Verma ji","Gupta ji","Singh ji","Khan sahab","Mehta ji","Yadav ji","Joshi ji","Agarwal ji","Mishra ji","Chauhan ji","Rawat ji","Kapoor ji","Bansal ji","Tiwari ji","Saxena ji"];
+  const flats=owners.map((o,i)=>[(i<8?"A-10":"B-20")+((i%8)+1),o,i<8?4500:5500]);
+  flats.forEach((f,i)=>cols.flats["f"+i]={flatNo:f[0],owner:f[1],phone:"98100000"+(10+i),maintenance:f[2],active:true});
+  const staff=[["Ramesh","Security Guard",12000],["Suresh","Security Guard",12000],["Kamla","Sweeper",8000],["Mohan","Lift Operator",10000]];
+  staff.forEach((s,i)=>cols.staff["s"+i]={name:s[0],designation:s[1],phone:"99900000"+(10+i),joinDate:"2025-04-01",salary:s[2],active:true});
+  const exp=[["Electricity","Common area bijli bill","UPPCL",18500,"Bank Transfer"],["Water","Water tanker / bill","Jal Board",4500,"UPI"],
+             ["Lift Maintenance","Lift AMC","Otis Service",3500,"Cheque"],["Generator / Diesel","Diesel 60 ltr","HP Pump",5600,"Cash"],
+             ["Housekeeping","Phenyl, broom, cleaning","Local shop",1200,"Cash"],["Repairs","Pump motor repair","Raju Electricals",2800,"UPI"]];
+  let e=0;
+  months.forEach((m,mi)=>{
+    const isCur=m===now;
+    exp.forEach((x,i)=>{if(isCur&&i>3)return;if(i===5&&mi%2)return;
+      cols.expenses["e"+(e++)]={month:m,date:m+"-"+String(5+i*3).padStart(2,"0"),category:x[0],description:x[1],vendor:x[2],amount:x[3]+mi*150,mode:x[4],billNo:"V-"+(100+e)};});
+    flats.forEach((f,i)=>{const paid=isCur?(i<10?f[2]:(i===10?2000:0)):(i===7&&mi%2?0:f[2]);
+      const mode=paid?["UPI","UPI","Cash","Bank Transfer","UPI","Cheque"][i%6]:"";
+      cols.maintenance[m+"_f"+i]={month:m,flatId:"f"+i,flatNo:f[0],owner:f[1],due:f[2],received:paid,date:paid?m+"-"+String(1+(i%5)*2).padStart(2,"0"):"",mode,
+        txnId:mode==="UPI"||mode==="Bank Transfer"?String(4280000000+mi*1000+i*37):"",receiptNo:paid?"R-"+(mi+1)+String(i+1).padStart(2,"0"):"",remarks:"",updatedBy:paid?"Demo Admin":""};});
+    staff.forEach((s,i)=>{const d=daysIn(m);
+      cols.salaries[m+"_s"+i]={month:m,staffId:"s"+i,staffName:s[0],designation:s[1],basic:s[2],daysPresent:i===2?d-2:d,bonus:0,advance:i===0&&!isCur?1000:0,deduction:0,
+        status:isCur?"Pending":"Paid",paidDate:isCur?"":m+"-01",mode:isCur?"":"Cash",remarks:""};});
+  });
+  return {cols,accounts};
+}
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ---------- state ---------- */
+let ME = null;
+let S = { settings:{}, flats:[], staff:[], users:[], exp:[], sal:[], mnt:[] };
+let month = curMonth();
+let tab = "dash";
+let fySubs = [], baseSubs = [], subFY = null;
+let charts = {};
+let F = { expQ:"", expCat:"", salQ:"", salSt:"", mntQ:"", mntSt:"", regQ:"" }; // local table filters
+let R = { from:"", to:"", mode:"", rows:null, key:"", err:"" }; // collection register
+
+/* ---------- helpers ---------- */
+function curMonth(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function inr(n){n=Math.round(Number(n)||0);return (n<0?"-₹":"₹")+Math.abs(n).toLocaleString("en-IN");}
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n;}
+function isAdmin(){return ME&&ME.role==="admin";}
+function mLabel(m){const [y,mm]=m.split("-");return new Date(+y,+mm-1,1).toLocaleString("en-IN",{month:"short",year:"numeric"});}
+function daysIn(m){const [y,mm]=m.split("-").map(Number);return new Date(y,mm,0).getDate();}
+function fyOf(m){const [y,mm]=m.split("-").map(Number);const s=mm>=4?y:y-1;return s+"-"+String((s+1)%100).padStart(2,"0");}
+function fyMonths(fy){const s=+fy.split("-")[0];const out=[];for(let i=0;i<12;i++){const d=new Date(s,3+i,1);out.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}return out;}
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200);}
+function show(id){["vLogin","vBoot","vNo","vApp"].forEach(v=>document.getElementById(v).classList.toggle("hide",v!==id));}
+function cats(){return (S.settings.categories&&S.settings.categories.length)?S.settings.categories:DEFAULT_CATEGORIES;}
+function today(){return new Date().toISOString().slice(0,10);}
+function mntStatus(r){const rec=num(r.received),due=num(r.due);if(rec<=0)return "Pending";if(rec>=due)return "Paid";return "Partial";}
+function salNet(r){return Math.round(num(r.basic)/daysIn(r.month)*num(r.daysPresent))+num(r.bonus)-num(r.advance)-num(r.deduction);}
+// Salary can be paid in parts: each payment {date, amount, mode, note}. Old records marked "Paid" count as one full payment.
+function salPays(r){
+  if(Array.isArray(r.payments))return r.payments;
+  return r.status==="Paid"?[{date:r.paidDate||r.month+"-01",amount:salNet(r),mode:r.mode||"",note:""}]:[];
+}
+function salPaidAmt(r){return salPays(r).reduce((a,p)=>a+num(p.amount),0);}
+function salBaaki(r){return Math.max(0,salNet(r)-salPaidAmt(r));}
+function salStatus(r){const p=salPaidAmt(r),n=salNet(r);if(n>0&&p>=n||n<=0)return "Paid";return p>0?"Partial":"Pending";}
+function byName(a,b){return String(a).localeCompare(String(b),undefined,{numeric:true});}
+function addMonth(m,k){const [y,mm]=m.split("-").map(Number);const d=new Date(y,mm-1+k,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function fmtDate(d){if(!d)return "";const [y,m,dd]=d.split("-");return dd+"-"+m+"-"+y;}
+
+/* ---------- auth ---------- */
+async function doLogin(){
+  const e=lEmail.value.trim(),p=lPass.value;lErr.textContent="";
+  try{await auth.signInWithEmailAndPassword(e,p);}catch(err){lErr.textContent="Login fail: email/password check karein.";}
+}
+lPass.addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+if(DEMO)demoInfo.classList.remove("hide");
+
+auth.onAuthStateChanged(async u=>{
+  stopAll();
+  if(!u){ME=null;show("vLogin");return;}
+  try{
+    const p=await db.doc("users/"+u.uid).get();
+    if(!p.exists){
+      const b=await db.doc("meta/bootstrap").get();
+      show(b.exists?"vNo":"vBoot");return;
+    }
+    ME={uid:u.uid,...p.data()};
+    if(!ME.active){show("vNo");return;}
+    startApp();
+  }catch(err){console.error(err);show("vNo");}
+});
+
+async function doBootstrap(){
+  const u=auth.currentUser,name=bName.value.trim();bErr.textContent="";
+  if(!name){bErr.textContent="Naam daalein";return;}
+  try{
+    const b=db.batch();
+    b.set(db.doc("users/"+u.uid),{name,email:u.email,role:"admin",active:true,createdAt:Date.now()});
+    b.set(db.doc("meta/bootstrap"),{uid:u.uid,at:Date.now()});
+    await b.commit();
+    location.reload();
+  }catch(err){bErr.textContent="Setup fail: "+err.message;}
+}
+
+/* ---------- data subscriptions ---------- */
+function stopAll(){[...baseSubs,...fySubs].forEach(f=>f());baseSubs=[];fySubs=[];subFY=null;}
+function startApp(){
+  show("vApp");
+  hUser.textContent=ME.name||ME.email;
+  hRole.textContent=ME.role.toUpperCase();
+  hRole.className="badge "+(isAdmin()?"b-admin":"b-viewer");
+  mPick.value=month;
+  const snap=(col,key)=>db.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));render();},e=>console.error(col,e));
+  baseSubs.push(db.doc("settings/main").onSnapshot(d=>{S.settings=d.exists?d.data():{};hTitle.textContent=S.settings.societyName||"Society Accounts";subscribeFY();render();}));
+  baseSubs.push(snap("flats","flats"));
+  baseSubs.push(snap("staff","staff"));
+  if(isAdmin())baseSubs.push(snap("users","users"));
+  subscribeFY();
+  render();
+}
+function subscribeFY(){
+  // load the selected FY, plus months back to the start month so the running balance is correct
+  const fy=fyOf(month),ms=fyMonths(fy),st=startM();
+  const a=st<ms[0]?st:ms[0],b=ms[11],key=a+"|"+b;
+  if(subFY===key)return;
+  fySubs.forEach(f=>f());fySubs=[];subFY=key;
+  const q=(col,key)=>db.collection(col).where("month",">=",a).where("month","<=",b)
+     .onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));if(key==="mnt")R.key="";render();},e=>console.error(col,e));
+  fySubs.push(q("expenses","exp"),q("salaries","sal"),q("maintenance","mnt"));
+}
+function setMonth(m){if(!m)return;month=m;mPick.value=m;subscribeFY();render();}
+function shiftMonth(k){const [y,mm]=month.split("-").map(Number);const d=new Date(y,mm-1+k,1);setMonth(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
+
+/* ---------- navigation ---------- */
+function tabs(){
+  const t=[["dash","Dashboard"],["exp","Expenses"],["sal","Staff Salary"],["mnt","Maintenance"],["reg","Collection Register"],["rep","Reports"],["master","Flats & Staff"]];
+  if(isAdmin())t.push(["users","Users"],["settings","Settings"]);
+  return t;
+}
+function go(t){tab=t;render();}
+function render(){
+  if(!ME)return;
+  nav.innerHTML=tabs().map(([k,l])=>`<button class="${tab===k?"on":""}" onclick="go('${k}')">${l}</button>`).join("");
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  const fn={dash:rDash,exp:rExp,sal:rSal,mnt:rMnt,reg:rReg,rep:rRep,master:rMaster,users:rUsers,settings:rSettings}[tab];
+  main.innerHTML=fn?fn():"";
+  if(tab==="dash")drawDashCharts();
+}
+
+/* ---------- calculations ---------- */
+function monthSum(m){
+  const e=S.exp.filter(x=>x.month===m).reduce((a,x)=>a+num(x.amount),0);
+  const salRows=S.sal.filter(x=>x.month===m);
+  // cash out: salary payments counted in the month they were actually paid
+  let salPaid=0;S.sal.forEach(r=>salPays(r).forEach(p=>{if((p.date||r.month).slice(0,7)===m)salPaid+=num(p.amount);}));
+  const salTotal=salRows.reduce((a,x)=>a+salNet(x),0),salPending=salRows.reduce((a,x)=>a+salBaaki(x),0);
+  const mr=S.mnt.filter(x=>x.month===m);
+  const due=mr.reduce((a,x)=>a+num(x.due),0),rec=mr.reduce((a,x)=>a+num(x.received),0);
+  return {exp:e,salPaid,salTotal,salPending,due,rec,pend:due-rec,net:rec-e-salPaid};
+}
+// Opening balance is entered for a start month (e.g. Oct 2026); balance counts from that month onward
+function startM(){return S.settings.startMonth||fyMonths(fyOf(curMonth()))[0];}
+function openBal(){return num(S.settings.openingBalance);}
+function balanceTill(m){const st=startM();if(m<st)return null;let b=openBal();for(let x=st;x<=m;x=addMonth(x,1))b+=monthSum(x).net;return b;}
+function fyOpening(fy){fy=fy||fyOf(month);const ms=fyMonths(fy),st=startM();if(st>ms[11])return null;if(st>=ms[0])return openBal();return balanceTill(addMonth(ms[0],-1));}
+function inrOr(v){return v===null?"—":inr(v);}
+
+/* ---------- DASHBOARD ---------- */
+function startGuide(){
+  if(S.flats.length&&S.staff.length)return "";
+  const step=(done,txt,t)=>`<li style="margin:6px 0">${done?"✅":"⬜"} ${txt} ${!done&&t&&isAdmin()?`<button class="btn sm sec" onclick="go('${t}')">Kholein</button>`:""}</li>`;
+  return `<div class="panel"><div class="ph"><h2>Shuru kaise karein</h2></div><ol style="margin:0;padding:10px 14px 14px 34px;line-height:1.5">
+    ${step(!!S.settings.societyName,"<b>Settings</b>: society ka naam, shuru ka mahina (jaise Oct 2026) aur us din ka opening balance (bank + cash) daalein","settings")}
+    ${step(S.flats.length>0,"<b>Flats & Staff</b>: har flat aur uska monthly maintenance daalein","master")}
+    ${step(S.staff.length>0,"<b>Flats & Staff</b>: staff (guard, sweeper...) aur unki monthly salary daalein","master")}
+    <li style="margin:6px 0">⬜ <b>Maintenance</b>: "Generate dues" dabayein, payment aane par "Receive"</li>
+    <li style="margin:6px 0">⬜ <b>Staff Salary</b>: "Generate salary", days/advance badlein, Paid karein</li>
+    <li style="margin:6px 0">⬜ <b>Expenses</b>: har kharcha bill ke saath "Add Expense"</li>
+  </ol></div>`;
+}
+function rDash(){
+  const s=monthSum(month),fy=fyOf(month);
+  return startGuide()+`
+  <div class="cards">
+    <div class="card"><div class="l">Maintenance received</div><div class="v" style="color:var(--grn)">${inr(s.rec)}</div><div class="s">Due ${inr(s.due)} · Pending ${inr(s.pend)}</div></div>
+    <div class="card"><div class="l">Expenses</div><div class="v" style="color:var(--red)">${inr(s.exp)}</div><div class="s">${S.exp.filter(x=>x.month===month).length} entries</div></div>
+    <div class="card"><div class="l">Salary paid</div><div class="v">${inr(s.salPaid)}</div><div class="s">Is mahine ki salary baaki ${inr(s.salPending)}</div></div>
+    <div class="card"><div class="l">Month surplus / deficit</div><div class="v" style="color:${s.net>=0?"var(--grn)":"var(--red)"}">${inr(s.net)}</div><div class="s">Received − Expense − Salary paid</div></div>
+    <div class="card"><div class="l">Balance till ${mLabel(month)}</div><div class="v">${inrOr(balanceTill(month))}</div><div class="s">Opening ${inr(openBal())} · ${mLabel(startM())} se</div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><div class="ph"><h2>FY ${fy}: Income vs Spending</h2></div><div class="chartbox"><canvas id="cTrend"></canvas></div></div>
+    <div class="panel"><div class="ph"><h2>${mLabel(month)}: Expense by category</h2></div><div class="chartbox"><canvas id="cCat"></canvas></div></div>
+  </div>`;
+}
+function drawDashCharts(){
+  if(typeof Chart==="undefined"){document.querySelectorAll(".chartbox").forEach(c=>c.innerHTML='<div class="empty">Chart load nahi hua (internet check karein)</div>');return;}
+  const ms=fyMonths(fyOf(month)),sums=ms.map(monthSum);
+  const t=document.getElementById("cTrend");
+  if(t)charts.t=new Chart(t,{type:"bar",data:{labels:ms.map(mLabel),datasets:[
+    {label:"Maintenance received",data:sums.map(x=>x.rec),backgroundColor:"#2f855a"},
+    {label:"Expenses",data:sums.map(x=>x.exp),backgroundColor:"#c0392b"},
+    {label:"Salary paid",data:sums.map(x=>x.salPaid),backgroundColor:"#b7791f"}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom"}},scales:{y:{beginAtZero:true,suggestedMax:10000,ticks:{precision:0,callback:v=>"₹"+Number(v).toLocaleString("en-IN")}}}}});
+  const c=document.getElementById("cCat");
+  const byCat={};S.exp.filter(x=>x.month===month).forEach(x=>byCat[x.category]=(byCat[x.category]||0)+num(x.amount));
+  const keys=Object.keys(byCat);
+  if(c){
+    if(!keys.length){c.parentElement.innerHTML='<div class="empty">Is mahine koi expense nahi</div>';return;}
+    charts.c=new Chart(c,{type:"doughnut",data:{labels:keys,datasets:[{data:keys.map(k=>byCat[k]),
+      backgroundColor:["#0f766e","#c0392b","#b7791f","#2b6cb0","#6b46c1","#2f855a","#d53f8c","#718096","#dd6b20","#319795"]}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{position:"right"}}}});
+  }
+}
+
+/* ---------- EXPENSES ---------- */
+function rExp(){
+  let rows=S.exp.filter(x=>x.month===month).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  if(F.expCat)rows=rows.filter(x=>x.category===F.expCat);
+  if(F.expQ){const q=F.expQ.toLowerCase();rows=rows.filter(x=>[x.description,x.vendor,x.billNo,x.mode].join(" ").toLowerCase().includes(q));}
+  const tot=rows.reduce((a,x)=>a+num(x.amount),0);
+  return `<div class="panel"><div class="ph"><h2>Expenses · ${mLabel(month)}</h2>
+    <input placeholder="Search..." value="${esc(F.expQ)}" oninput="F.expQ=this.value;keepFocus(this)" data-k="expQ">
+    <select onchange="F.expCat=this.value;render()"><option value="">All categories</option>${cats().map(c=>`<option ${F.expCat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    ${isAdmin()?`<button class="btn" onclick="editExp()">+ Add Expense</button>`:""}</div>
+  <div class="tw">${rows.length?`<table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Vendor</th><th>Mode</th><th>Bill No</th><th class="n">Amount</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td>${esc(x.vendor)}</td><td>${esc(x.mode)}</td><td>${esc(x.billNo)}</td><td class="n">${inr(x.amount)}</td>
+  ${isAdmin()?`<td><button class="btn sec sm" onclick="editExp('${x.id}')">Edit</button> <button class="btn red sm" onclick="delDoc('expenses','${x.id}')">Delete</button></td>`:""}</tr>`).join("")}
+  </tbody><tfoot><tr><td colspan="6">Total</td><td class="n">${inr(tot)}</td>${isAdmin()?"<td></td>":""}</tr></tfoot></table>`:`<div class="empty">Koi expense nahi mila</div>`}</div></div>`;
+}
+function editExp(id){
+  const x=id?S.exp.find(e=>e.id===id):{date:month===curMonth()?today():month+"-01",mode:"Cash"};
+  openForm(id?"Edit Expense":"Add Expense",[
+    {k:"date",label:"Date",type:"date",req:1},{k:"category",label:"Category",type:"select",options:cats(),req:1},
+    {k:"description",label:"Description",req:1,full:1},{k:"vendor",label:"Vendor / Paid to"},
+    {k:"amount",label:"Amount (₹)",type:"number",req:1},{k:"mode",label:"Payment mode",type:"select",options:PAY_MODES},
+    {k:"billNo",label:"Bill / Voucher No"}],x,async v=>{
+      v.amount=num(v.amount);v.month=v.date.slice(0,7);v.updatedBy=ME.name;v.updatedAt=Date.now();
+      if(id)await db.doc("expenses/"+id).update(v);else await db.collection("expenses").add({...v,createdAt:Date.now()});
+      if(v.month!==month)toast("Saved in "+mLabel(v.month));
+    });
+}
+
+/* ---------- SALARY ---------- */
+function rSal(){
+  let rows=S.sal.filter(x=>x.month===month).sort((a,b)=>byName(a.staffName,b.staffName));
+  const all=rows;
+  if(F.salSt)rows=rows.filter(x=>salStatus(x)===F.salSt);
+  if(F.salQ){const q=F.salQ.toLowerCase();rows=rows.filter(x=>[x.staffName,x.designation].join(" ").toLowerCase().includes(q));}
+  const missing=S.staff.filter(s=>s.active!==false&&!all.some(r=>r.staffId===s.id)).length;
+  const t=k=>rows.reduce((a,x)=>a+num(x[k]),0),tn=rows.reduce((a,x)=>a+salNet(x),0);
+  const tp=rows.reduce((a,x)=>a+salPaidAmt(x),0),tb=rows.reduce((a,x)=>a+salBaaki(x),0);
+  const lastPay=x=>{const p=salPays(x);return p.length?fmtDate(p[p.length-1].date)+" ("+(p.length)+" baar)":"";};
+  return `<div class="panel"><div class="ph"><h2>Staff Salary · ${mLabel(month)} (${daysIn(month)} days)</h2>
+   <input placeholder="Search staff..." value="${esc(F.salQ)}" oninput="F.salQ=this.value;keepFocus(this)" data-k="salQ">
+   <select onchange="F.salSt=this.value;render()"><option value="">All status</option>${["Paid","Partial","Pending"].map(s=>`<option ${F.salSt===s?"selected":""}>${s}</option>`).join("")}</select>
+   ${isAdmin()&&missing?`<button class="btn" onclick="genSalary()">Generate salary for ${missing} staff</button>`:""}</div>
+  <div class="tw">${rows.length?`<table><thead><tr><th>Staff</th><th>Designation</th><th class="n">Monthly Salary</th><th class="n">Days</th><th class="n">Bonus</th><th class="n">Purana advance cut</th><th class="n">Deduction</th><th class="n">Net Pay</th><th class="n">Diya</th><th class="n">Baaki</th><th>Status</th><th>Last payment</th><th></th></tr></thead><tbody>
+  ${rows.map(x=>{const st=salStatus(x),bk=salBaaki(x);return `<tr><td>${esc(x.staffName)}</td><td>${esc(x.designation)}</td><td class="n">${inr(x.basic)}</td><td class="n">${num(x.daysPresent)}</td><td class="n">${inr(x.bonus)}</td><td class="n">${inr(x.advance)}</td><td class="n">${inr(x.deduction)}</td><td class="n"><b>${inr(salNet(x))}</b></td>
+  <td class="n" style="color:var(--grn)">${inr(salPaidAmt(x))}</td><td class="n" style="color:${bk>0?"var(--red)":"inherit"}"><b>${inr(bk)}</b></td>
+  <td><span class="st st-${st}">${st}</span></td><td>${lastPay(x)}</td>
+  <td>${isAdmin()&&bk>0?`<button class="btn sm" onclick="paySal('${x.id}')">Pay</button> `:""}<button class="btn sec sm" onclick="paySal('${x.id}')">${isAdmin()?"Payments":"Details"}</button>
+  ${isAdmin()?` <button class="btn sec sm" onclick="editSal('${x.id}')">Edit</button> <button class="btn red sm" onclick="delDoc('salaries','${x.id}')">Delete</button>`:""}</td></tr>`;}).join("")}
+  </tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${inr(t("basic"))}</td><td></td><td class="n">${inr(t("bonus"))}</td><td class="n">${inr(t("advance"))}</td><td class="n">${inr(t("deduction"))}</td><td class="n">${inr(tn)}</td><td class="n">${inr(tp)}</td><td class="n">${inr(tb)}</td><td colspan="3"></td></tr></tfoot></table>`
+  :`<div class="empty">${S.staff.length?(isAdmin()?"Is mahine ki salary abhi generate nahi hui. Upar button dabayein.":"Is mahine ki salary abhi nahi bani."):"Pehle 'Flats & Staff' tab mein staff add karein."}</div>`}</div>
+  <div class="note">Net Pay = Monthly Salary ÷ ${daysIn(month)} × Days present + Bonus − Purana advance cut − Deduction. Salary kisto mein de sakte hain: "Pay" dabakar jitna diya utna daalein, baaki apne aap dikhega.</div></div>`;
+}
+function paySal(id){
+  const x=S.sal.find(r=>r.id===id);if(!x)return;
+  const pays=salPays(x),net=salNet(x),paid=salPaidAmt(x),bk=salBaaki(x);
+  const hist=pays.length?`<table style="margin-top:8px"><thead><tr><th>Date</th><th class="n">Amount</th><th>Mode</th><th>Note</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+    ${pays.map((p,i)=>`<tr><td>${fmtDate(p.date)}</td><td class="n">${inr(p.amount)}</td><td>${esc(p.mode)}</td><td>${esc(p.note)}</td>${isAdmin()?`<td><button class="btn red sm" onclick="removeSalPay('${id}',${i})">Hatao</button></td>`:""}</tr>`).join("")}</tbody></table>`
+    :`<div class="empty" style="padding:10px">Abhi tak koi payment nahi diya</div>`;
+  const form=isAdmin()&&bk>0?`<h3 style="margin-top:16px;font-size:15px">Naya payment</h3><div class="mrow">
+    <div><label>Amount (₹) *</label><input class="f" id="pAmt" type="number" min="0" step="any" value="${bk}"></div>
+    <div><label>Date *</label><input class="f" id="pDate" type="date" value="${today()}"></div>
+    <div><label>Mode</label><select class="f" id="pMode">${PAY_MODES.map(m=>`<option>${m}</option>`).join("")}</select></div>
+    <div><label>Note</label><input class="f" id="pNote" placeholder="jaise Advance, Baaki salary"></div></div>`:"";
+  modalRoot.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeForm()"><div class="modal" style="max-width:560px">
+    <h3>Salary · ${esc(x.staffName)} · ${mLabel(x.month)}</h3>
+    <div class="calc">Net Pay ${inr(net)} · Diya ${inr(paid)} · Baaki ${inr(bk)}</div>
+    <div class="tw">${hist}</div>${form}<div class="err" id="mErr"></div>
+    <div class="mfoot"><button class="btn sec" onclick="closeForm()">Band karein</button>${form?`<button class="btn" id="mSave" onclick="saveSalPay('${id}')">Payment save karein</button>`:""}</div></div></div>`;
+}
+async function saveSalPay(id){
+  const x=S.sal.find(r=>r.id===id),amt=num(pAmt.value),bk=salBaaki(x);
+  if(amt<=0){mErr.textContent="Amount daalein";return;}
+  if(!pDate.value){mErr.textContent="Date daalein";return;}
+  if(amt>bk){mErr.textContent="Baaki "+inr(bk)+" hai, isse zyada nahi de sakte";return;}
+  const payments=[...salPays(x),{date:pDate.value,amount:amt,mode:pMode.value,note:pNote.value.trim()}];
+  mSave.disabled=true;
+  try{await db.doc("salaries/"+id).update({payments,status:salStatus({...x,payments}),updatedBy:ME.name,updatedAt:Date.now()});
+    x.payments=payments;toast(inr(amt)+" payment save hua");paySal(id);}
+  catch(e){mErr.textContent=e.message;mSave.disabled=false;}
+}
+async function removeSalPay(id,i){
+  const x=S.sal.find(r=>r.id===id);const payments=salPays(x).filter((_,k)=>k!==i);
+  try{await db.doc("salaries/"+id).update({payments,status:salStatus({...x,payments}),updatedBy:ME.name,updatedAt:Date.now()});x.payments=payments;toast("Payment hataya");paySal(id);}
+  catch(e){mErr.textContent=e.message;}
+}
+async function genSalary(){
+  const ex=await db.collection("salaries").where("month","==",month).get();
+  const have=new Set(ex.docs.map(d=>d.data().staffId));
+  const b=db.batch();let n=0;
+  S.staff.filter(s=>s.active!==false).forEach(s=>{
+    if(have.has(s.id))return;
+    b.set(db.doc("salaries/"+month+"_"+s.id),{month,staffId:s.id,staffName:s.name,designation:s.designation||"",basic:num(s.salary),
+      daysPresent:daysIn(month),bonus:0,advance:0,deduction:0,payments:[],status:"Pending",remarks:"",createdAt:Date.now(),updatedBy:ME.name});n++;
+  });
+  await b.commit();toast(n+" salary rows created");
+}
+function editSal(id){
+  const x=S.sal.find(r=>r.id===id);
+  openForm("Salary · "+x.staffName+" · "+mLabel(x.month),[
+    {k:"basic",label:"Monthly salary (₹)",type:"number"},{k:"daysPresent",label:"Days present (of "+daysIn(x.month)+")",type:"number"},
+    {k:"bonus",label:"Bonus / Overtime (₹)",type:"number"},{k:"advance",label:"Purana advance cut (₹, pichle mahine ka loan)",type:"number"},
+    {k:"deduction",label:"Other deduction (₹)",type:"number"},
+    {k:"remarks",label:"Remarks",full:1}],x,async v=>{
+      ["basic","daysPresent","bonus","advance","deduction"].forEach(k=>v[k]=num(v[k]));
+      if(v.daysPresent>daysIn(x.month))throw new Error("Days present "+daysIn(x.month)+" se zyada nahi ho sakte");
+      v.payments=salPays(x);v.status=salStatus({...x,...v});
+      v.updatedBy=ME.name;v.updatedAt=Date.now();
+      await db.doc("salaries/"+id).update(v);
+    },v=>{const n=salNet({...v,month:x.month}),p=salPaidAmt(x);return "Net Pay: "+inr(n)+" · Diya: "+inr(p)+" · Baaki: "+inr(Math.max(0,n-p));});
+}
+
+/* ---------- MAINTENANCE ---------- */
+function rMnt(){
+  let rows=S.mnt.filter(x=>x.month===month).sort((a,b)=>byName(a.flatNo,b.flatNo));
+  const all=rows;
+  if(F.mntSt)rows=rows.filter(x=>mntStatus(x)===F.mntSt);
+  if(F.mntQ){const q=F.mntQ.toLowerCase();rows=rows.filter(x=>[x.flatNo,x.owner].join(" ").toLowerCase().includes(q));}
+  const missing=S.flats.filter(f=>f.active!==false&&!all.some(r=>r.flatId===f.id)).length;
+  const td=rows.reduce((a,x)=>a+num(x.due),0),tr=rows.reduce((a,x)=>a+num(x.received),0);
+  return `<div class="panel"><div class="ph"><h2>Maintenance Collection · ${mLabel(month)}</h2>
+   <input placeholder="Flat / owner..." value="${esc(F.mntQ)}" oninput="F.mntQ=this.value;keepFocus(this)" data-k="mntQ">
+   <select onchange="F.mntSt=this.value;render()"><option value="">All status</option>${["Paid","Partial","Pending"].map(s=>`<option ${F.mntSt===s?"selected":""}>${s}</option>`).join("")}</select>
+   ${isAdmin()&&missing?`<button class="btn" onclick="genMnt()">Generate dues for ${missing} flats</button>`:""}</div>
+  <div class="tw">${rows.length?`<table><thead><tr><th>Flat</th><th>Owner</th><th class="n">Due</th><th class="n">Received</th><th class="n">Balance</th><th>Status</th><th>Date</th><th>Mode</th><th>UPI / Txn ID</th><th>Receipt</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${rows.map(x=>{const st=mntStatus(x);return `<tr><td><b>${esc(x.flatNo)}</b></td><td>${esc(x.owner)}</td><td class="n">${inr(x.due)}</td><td class="n">${inr(x.received)}</td><td class="n">${inr(num(x.due)-num(x.received))}</td>
+  <td><span class="st st-${st}">${st}</span>${x.advance?' <span class="st" style="background:var(--pri2);color:var(--pri)">Advance</span>':""}</td><td>${fmtDate(x.date)}</td><td>${esc(x.mode)}</td><td>${esc(x.txnId)}</td><td>${esc(x.receiptNo)}</td>
+  ${isAdmin()?`<td><button class="btn sec sm" onclick="editMnt('${x.id}')">Receive</button> <button class="btn red sm" onclick="delDoc('maintenance','${x.id}')">Delete</button></td>`:""}</tr>`;}).join("")}
+  </tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${inr(td)}</td><td class="n">${inr(tr)}</td><td class="n">${inr(td-tr)}</td><td colspan="${isAdmin()?6:5}"></td></tr></tfoot></table>`
+  :`<div class="empty">${S.flats.length?(isAdmin()?"Is mahine ke dues abhi generate nahi hue. Upar button dabayein.":"Is mahine ke dues abhi nahi bane."):"Pehle 'Flats & Staff' tab mein flats add karein."}</div>`}</div></div>`;
+}
+async function genMnt(){
+  // re-check from database so advance payments already saved are never overwritten
+  const ex=await db.collection("maintenance").where("month","==",month).get();
+  const have=new Set(ex.docs.map(d=>d.data().flatId));
+  const b=db.batch();let n=0;
+  S.flats.filter(f=>f.active!==false).forEach(f=>{
+    if(have.has(f.id))return;
+    b.set(db.doc("maintenance/"+month+"_"+f.id),{month,flatId:f.id,flatNo:f.flatNo,owner:f.owner||"",due:num(f.maintenance),received:0,date:"",mode:"",txnId:"",receiptNo:"",remarks:"",createdAt:Date.now(),updatedBy:ME.name});n++;
+  });
+  await b.commit();toast(n+" flat dues created");
+}
+function editMnt(id){
+  const x=S.mnt.find(r=>r.id===id);
+  const flat=S.flats.find(f=>f.id===x.flatId);
+  const dueOf=m=>{const r=S.mnt.find(z=>z.month===m&&z.flatId===x.flatId);return r?num(r.due):num(flat?flat.maintenance:x.due);};
+  const monthsOf=n=>Array.from({length:n},(_,i)=>addMonth(x.month,i));
+  const v0={...x,months:"1"};if(!num(x.received)){v0.received=x.due;v0.date=today();v0.mode="UPI";}
+  openForm("Payment · Flat "+x.flatNo+" · "+mLabel(x.month),[
+    {k:"due",label:"Is mahine ka due (₹)",type:"number"},{k:"months",label:"Kitne mahine ka payment",type:"select",options:["1","2","3","4","5","6","7","8","9","10","11","12"]},
+    {k:"received",label:"Kul received amount (₹)",type:"number"},{k:"date",label:"Payment date",type:"date"},
+    {k:"mode",label:"Mode",type:"select",options:["",...PAY_MODES]},{k:"txnId",label:"UPI / Transaction ID (UTR)"},
+    {k:"receiptNo",label:"Receipt No"},{k:"remarks",label:"Remarks"}],v0,async v=>{
+      const n=parseInt(v.months)||1;
+      let left=num(v.received);
+      if(left>0&&!v.date)throw new Error("Payment date daalein");
+      if(n>1&&left<=0)throw new Error("Advance ke liye received amount daalein");
+      const common={date:v.date,mode:v.mode,txnId:v.txnId,receiptNo:v.receiptNo,updatedBy:ME.name,updatedAt:Date.now()};
+      const b=db.batch(),list=monthsOf(n);
+      list.forEach((m,i)=>{
+        const due=i===0?num(v.due):dueOf(m);
+        const rec=i===n-1?left:Math.min(due,left);left-=rec;
+        const old=i===0?x:S.mnt.find(z=>z.month===m&&z.flatId===x.flatId);
+        const base=old?{...old}:{month:m,flatId:x.flatId,flatNo:x.flatNo,owner:x.owner||"",createdAt:Date.now()};
+        delete base.id;
+        b.set(db.doc("maintenance/"+(old&&old.id?old.id:m+"_"+x.flatId)),{...base,...common,due,received:rec,
+          advance:i>0,remarks:i===0?v.remarks:"Advance: "+mLabel(x.month)+" ke payment ke saath"});
+      });
+      await b.commit();R.key="";
+      if(n>1)toast(n+" mahine update hue ("+mLabel(list[0])+" se "+mLabel(list[n-1])+")");
+    },v=>{const n=parseInt(v.months)||1,list=monthsOf(n);
+      const total=num(v.due)+list.slice(1).reduce((a,m)=>a+dueOf(m),0);
+      return (n>1?n+" mahine ("+mLabel(list[0])+" se "+mLabel(list[n-1])+") ka due: "+inr(total)+" · ":"")+"Balance: "+inr(total-num(v.received));});
+}
+
+/* ---------- COLLECTION REGISTER (date-wise) ---------- */
+function regDefault(){if(!R.from){R.from=month+"-01";R.to=month===curMonth()?today():month+"-"+daysIn(month);}}
+function setRange(kind){
+  const t=today();
+  if(kind==="today"){R.from=t;R.to=t;}
+  if(kind==="week"){const d=new Date();d.setDate(d.getDate()-6);R.from=d.toISOString().slice(0,10);R.to=t;}
+  if(kind==="month"){R.from=month+"-01";R.to=month+"-"+daysIn(month);}
+  if(kind==="fy"){const ms=fyMonths(fyOf(month));R.from=ms[0]+"-01";R.to=ms[11]+"-"+daysIn(ms[11]);}
+  render();
+}
+async function loadRegister(){
+  regDefault();
+  const key=R.from+"|"+R.to;if(R.key===key)return;
+  R.key=key;R.rows=null;R.err="";
+  try{
+    const s=await db.collection("maintenance").where("date",">=",R.from).where("date","<=",R.to).get();
+    if(R.key!==key)return;
+    R.rows=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>num(x.received)>0);
+  }catch(e){R.rows=[];R.err=e.message;}
+  if(tab==="reg")render();
+}
+function regRows(){
+  let rows=(R.rows||[]).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")||byName(a.flatNo,b.flatNo)||a.month.localeCompare(b.month));
+  if(R.mode)rows=rows.filter(x=>x.mode===R.mode);
+  if(F.regQ){const q=F.regQ.toLowerCase();rows=rows.filter(x=>[x.flatNo,x.owner,x.txnId,x.receiptNo].join(" ").toLowerCase().includes(q));}
+  return rows;
+}
+function rReg(){
+  regDefault();loadRegister();
+  const rows=regRows(),tot=rows.reduce((a,x)=>a+num(x.received),0);
+  const byMode={};rows.forEach(x=>byMode[x.mode||"Other"]=(byMode[x.mode||"Other"]||0)+num(x.received));
+  let body="",cur=null,sub=0,cnt=0;
+  const subRow=()=>`<tr style="background:var(--pri2)"><td colspan="4" style="color:var(--pri)"><b>${fmtDate(cur)} ka total</b> (${cnt} payment)</td><td class="n" style="color:var(--pri)"><b>${inr(sub)}</b></td><td colspan="4"></td></tr>`;
+  rows.forEach(x=>{
+    if(cur!==null&&x.date!==cur){body+=subRow();sub=0;cnt=0;}
+    cur=x.date;sub+=num(x.received);cnt++;
+    body+=`<tr><td>${fmtDate(x.date)}</td><td><b>${esc(x.flatNo)}</b></td><td>${esc(x.owner)}</td><td>${mLabel(x.month)}${x.advance?' <span class="st" style="background:var(--pri2);color:var(--pri)">Advance</span>':""}</td>
+      <td class="n">${inr(x.received)}</td><td>${esc(x.mode)}</td><td>${esc(x.txnId)}</td><td>${esc(x.receiptNo)}</td><td>${esc(x.updatedBy)}</td></tr>`;
+  });
+  if(rows.length)body+=subRow();
+  return `<div class="panel"><div class="ph"><h2>Collection Register (date-wise)</h2>
+     <label style="margin:0">From</label><input type="date" id="rFrom" value="${R.from}" onchange="R.from=this.value;render()">
+     <label style="margin:0">To</label><input type="date" id="rTo" value="${R.to}" onchange="R.to=this.value;render()">
+     <select onchange="R.mode=this.value;render()"><option value="">All modes</option>${PAY_MODES.map(m=>`<option ${R.mode===m?"selected":""}>${m}</option>`).join("")}</select>
+     <input placeholder="Flat / UTR / receipt..." value="${esc(F.regQ)}" oninput="F.regQ=this.value;keepFocus(this)" data-k="regQ"></div>
+   <div class="ph" style="gap:6px">
+     <button class="btn sec sm" onclick="setRange('today')">Aaj</button><button class="btn sec sm" onclick="setRange('week')">Last 7 din</button>
+     <button class="btn sec sm" onclick="setRange('month')">${mLabel(month)}</button><button class="btn sec sm" onclick="setRange('fy')">FY ${fyOf(month)}</button>
+     <span style="flex:1"></span><button class="btn sm" onclick="exportReg()">Download Excel</button></div>
+   <div class="cards" style="padding:14px 14px 0;margin:0">
+     <div class="card"><div class="l">Total collection</div><div class="v" style="color:var(--grn)">${inr(tot)}</div><div class="s">${rows.length} payments · ${fmtDate(R.from)} se ${fmtDate(R.to)}</div></div>
+     ${Object.keys(byMode).sort().map(m=>`<div class="card"><div class="l">${esc(m)}</div><div class="v">${inr(byMode[m])}</div><div class="s">${rows.filter(x=>(x.mode||"Other")===m).length} payments</div></div>`).join("")}
+   </div>
+   <div class="tw" style="margin-top:14px">${R.rows===null?`<div class="empty">Loading...</div>`:R.err?`<div class="empty">${esc(R.err)}</div>`:rows.length?`<table>
+     <thead><tr><th>Date</th><th>Flat</th><th>Owner</th><th>For month</th><th class="n">Amount</th><th>Mode</th><th>UPI / Txn ID</th><th>Receipt</th><th>Entry by</th></tr></thead>
+     <tbody>${body}</tbody><tfoot><tr><td colspan="4">Grand Total</td><td class="n">${inr(tot)}</td><td colspan="4"></td></tr></tfoot></table>`
+     :`<div class="empty">Is date range mein koi payment nahi mila</div>`}</div>
+   <div class="note">Payment Maintenance tab mein "Receive" se entry hoti hai. Bank statement se milane ke liye UPI / Txn ID search karein.</div></div>`;
+}
+function exportReg(){
+  if(typeof XLSX==="undefined"){alert("Excel library load nahi hui. Internet check karke page refresh karein.");return;}
+  const wb=XLSX.utils.book_new(),rows=regRows();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows.map(x=>({Date:fmtDate(x.date),Flat:x.flatNo,Owner:x.owner,"For Month":mLabel(x.month),Amount:num(x.received),Mode:x.mode,"UPI / Txn ID":x.txnId||"",Receipt:x.receiptNo||"",Advance:x.advance?"Yes":"","Entry by":x.updatedBy||""})):[{Info:"No data"}]),"Collection Register");
+  XLSX.writeFile(wb,"Collection_Register_"+R.from+"_to_"+R.to+".xlsx");
+}
+
+/* ---------- REPORTS ---------- */
+function repData(){
+  const fy=fyOf(month),ms=fyMonths(fy);
+  const monthly=ms.map(m=>({m,...monthSum(m),bal:balanceTill(m)}));
+  const cat={};S.exp.forEach(x=>{cat[x.category]=cat[x.category]||{};cat[x.category][x.month]=(cat[x.category][x.month]||0)+num(x.amount);});
+  const flat={};S.mnt.forEach(x=>{const k=x.flatNo;flat[k]=flat[k]||{flatNo:k,owner:x.owner,due:0,rec:0};flat[k].due+=num(x.due);flat[k].rec+=num(x.received);});
+  const staff={};S.sal.forEach(x=>{const k=x.staffId;staff[k]=staff[k]||{name:x.staffName,des:x.designation,total:0,paid:0};staff[k].total+=salNet(x);staff[k].paid+=salPaidAmt(x);});
+  return {fy,ms,monthly,cat,flat:Object.values(flat).sort((a,b)=>byName(a.flatNo,b.flatNo)),staff:Object.values(staff).sort((a,b)=>byName(a.name,b.name))};
+}
+function rRep(){
+  const r=repData(),T=k=>r.monthly.reduce((a,x)=>a+x[k],0);
+  const catKeys=Object.keys(r.cat).sort();
+  return `<div class="ph noprint" style="background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:16px">
+    <h2>Reports · FY ${r.fy}</h2><button class="btn" onclick="exportXlsx()">Download Excel</button><button class="btn sec" onclick="window.print()">Print / Save PDF</button></div>
+  <div class="panel"><div class="ph"><h2>Month-wise Summary · FY ${r.fy} (Opening ${inrOr(fyOpening(r.fy))}${startM()>=r.ms[0]&&startM()<=r.ms[11]?" · "+mLabel(startM())+" se":""})</h2></div><div class="tw"><table>
+   <thead><tr><th>Month</th><th class="n">Maint. Due</th><th class="n">Received</th><th class="n">Pending</th><th class="n">Expenses</th><th class="n">Salary Paid</th><th class="n">Salary Pending</th><th class="n">Surplus</th><th class="n">Balance</th></tr></thead>
+   <tbody>${r.monthly.map(x=>`<tr><td>${mLabel(x.m)}</td><td class="n">${inr(x.due)}</td><td class="n">${inr(x.rec)}</td><td class="n">${inr(x.pend)}</td><td class="n">${inr(x.exp)}</td><td class="n">${inr(x.salPaid)}</td><td class="n">${inr(x.salPending)}</td><td class="n" style="color:${x.net>=0?"var(--grn)":"var(--red)"}">${inr(x.net)}</td><td class="n">${inrOr(x.bal)}</td></tr>`).join("")}</tbody>
+   <tfoot><tr><td>Total</td><td class="n">${inr(T("due"))}</td><td class="n">${inr(T("rec"))}</td><td class="n">${inr(T("pend"))}</td><td class="n">${inr(T("exp"))}</td><td class="n">${inr(T("salPaid"))}</td><td class="n">${inr(T("salPending"))}</td><td class="n">${inr(T("net"))}</td><td class="n">${inrOr(r.monthly[11].bal)}</td></tr></tfoot></table></div></div>
+  <div class="panel"><div class="ph"><h2>Category-wise Expenses · FY ${r.fy}</h2></div><div class="tw">${catKeys.length?`<table>
+   <thead><tr><th>Category</th>${r.ms.map(m=>`<th class="n">${mLabel(m).split(" ")[0]}</th>`).join("")}<th class="n">Total</th></tr></thead>
+   <tbody>${catKeys.map(c=>`<tr><td>${esc(c)}</td>${r.ms.map(m=>`<td class="n">${r.cat[c][m]?inr(r.cat[c][m]):"-"}</td>`).join("")}<td class="n"><b>${inr(Object.values(r.cat[c]).reduce((a,b)=>a+b,0))}</b></td></tr>`).join("")}</tbody></table>`:`<div class="empty">No expenses</div>`}</div></div>
+  <div class="grid2">
+   <div class="panel"><div class="ph"><h2>Flat-wise Maintenance · FY ${r.fy}</h2></div><div class="tw">${r.flat.length?`<table><thead><tr><th>Flat</th><th>Owner</th><th class="n">Due</th><th class="n">Received</th><th class="n">Pending</th></tr></thead>
+    <tbody>${r.flat.map(f=>`<tr><td>${esc(f.flatNo)}</td><td>${esc(f.owner)}</td><td class="n">${inr(f.due)}</td><td class="n">${inr(f.rec)}</td><td class="n" style="color:${f.due-f.rec>0?"var(--red)":"inherit"}">${inr(f.due-f.rec)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">No data</div>`}</div></div>
+   <div class="panel"><div class="ph"><h2>Staff-wise Salary · FY ${r.fy}</h2></div><div class="tw">${r.staff.length?`<table><thead><tr><th>Staff</th><th>Designation</th><th class="n">Total Net</th><th class="n">Paid</th><th class="n">Pending</th></tr></thead>
+    <tbody>${r.staff.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.des)}</td><td class="n">${inr(s.total)}</td><td class="n">${inr(s.paid)}</td><td class="n">${inr(s.total-s.paid)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">No data</div>`}</div></div>
+  </div>`;
+}
+function exportXlsx(){
+  if(typeof XLSX==="undefined"){alert("Excel library load nahi hui. Internet check karke page refresh karein.");return;}
+  const r=repData(),wb=XLSX.utils.book_new();
+  const add=(name,rows)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Info:"No data"}]),name);
+  add("Summary",r.monthly.map(x=>({Month:mLabel(x.m),"Maintenance Due":x.due,Received:x.rec,Pending:x.pend,Expenses:x.exp,"Salary Paid":x.salPaid,"Salary Pending":x.salPending,Surplus:x.net,Balance:x.bal===null?"":x.bal})));
+  add("Expenses",[...S.exp].sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(x=>({Date:x.date,Month:mLabel(x.month),Category:x.category,Description:x.description,Vendor:x.vendor,Mode:x.mode,"Bill No":x.billNo,Amount:num(x.amount)})));
+  add("Salary",[...S.sal].sort((a,b)=>a.month.localeCompare(b.month)||byName(a.staffName,b.staffName)).map(x=>({Month:mLabel(x.month),Staff:x.staffName,Designation:x.designation,"Monthly Salary":num(x.basic),Days:num(x.daysPresent),Bonus:num(x.bonus),"Purana advance cut":num(x.advance),Deduction:num(x.deduction),"Net Pay":salNet(x),Diya:salPaidAmt(x),Baaki:salBaaki(x),Status:salStatus(x),
+    Payments:salPays(x).map(p=>fmtDate(p.date)+" "+inr(p.amount)+(p.mode?" "+p.mode:"")+(p.note?" ("+p.note+")":"")).join("; ")})));
+  add("Maintenance",[...S.mnt].sort((a,b)=>a.month.localeCompare(b.month)||byName(a.flatNo,b.flatNo)).map(x=>({Month:mLabel(x.month),Flat:x.flatNo,Owner:x.owner,Due:num(x.due),Received:num(x.received),Balance:num(x.due)-num(x.received),Status:mntStatus(x),Date:fmtDate(x.date),Mode:x.mode,"UPI / Txn ID":x.txnId||"",Receipt:x.receiptNo,Advance:x.advance?"Yes":""})));
+  add("Flat-wise",r.flat.map(f=>({Flat:f.flatNo,Owner:f.owner,Due:f.due,Received:f.rec,Pending:f.due-f.rec})));
+  add("Staff-wise",r.staff.map(s=>({Staff:s.name,Designation:s.des,"Total Net":s.total,Paid:s.paid,Pending:s.total-s.paid})));
+  XLSX.writeFile(wb,(S.settings.societyName||"Society").replace(/\W+/g,"_")+"_FY_"+r.fy+".xlsx");
+}
+
+/* ---------- MASTERS (Flats & Staff) ---------- */
+function rMaster(){
+  const flats=[...S.flats].sort((a,b)=>byName(a.flatNo,b.flatNo)),staff=[...S.staff].sort((a,b)=>byName(a.name,b.name));
+  const act=x=>x.active===false?'<span class="st st-Pending">Inactive</span>':'<span class="st st-Paid">Active</span>';
+  return `<div class="panel"><div class="ph"><h2>Flats (${flats.length})</h2>${isAdmin()?`<button class="btn" onclick="editFlat()">+ Add Flat</button>`:""}</div>
+  <div class="tw">${flats.length?`<table><thead><tr><th>Flat No</th><th>Owner / Resident</th><th>Phone</th><th class="n">Monthly Maintenance</th><th>Status</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${flats.map(f=>`<tr><td><b>${esc(f.flatNo)}</b></td><td>${esc(f.owner)}</td><td>${esc(f.phone)}</td><td class="n">${inr(f.maintenance)}</td><td>${act(f)}</td>
+  ${isAdmin()?`<td><button class="btn sec sm" onclick="editFlat('${f.id}')">Edit</button> <button class="btn red sm" onclick="delDoc('flats','${f.id}')">Delete</button></td>`:""}</tr>`).join("")}</tbody></table>`:`<div class="empty">Koi flat add nahi hua</div>`}</div></div>
+  <div class="panel"><div class="ph"><h2>Staff (${staff.length})</h2>${isAdmin()?`<button class="btn" onclick="editStaff()">+ Add Staff</button>`:""}</div>
+  <div class="tw">${staff.length?`<table><thead><tr><th>Name</th><th>Designation</th><th>Phone</th><th>Joined</th><th class="n">Monthly Salary</th><th>Status</th>${isAdmin()?"<th></th>":""}</tr></thead><tbody>
+  ${staff.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.designation)}</td><td>${esc(s.phone)}</td><td>${esc(s.joinDate)}</td><td class="n">${inr(s.salary)}</td><td>${act(s)}</td>
+  ${isAdmin()?`<td><button class="btn sec sm" onclick="editStaff('${s.id}')">Edit</button> <button class="btn red sm" onclick="delDoc('staff','${s.id}')">Delete</button></td>`:""}</tr>`).join("")}</tbody></table>`:`<div class="empty">Koi staff add nahi hua</div>`}</div>
+  <div class="note">Staff ya flat chhod de to Delete ki jagah "Inactive" karein, taaki purana record reports mein bana rahe.</div></div>`;
+}
+function editFlat(id){
+  const x=id?S.flats.find(f=>f.id===id):{active:"Active"};
+  openForm(id?"Edit Flat":"Add Flat",[{k:"flatNo",label:"Flat No",req:1},{k:"owner",label:"Owner / Resident name"},{k:"phone",label:"Phone"},
+    {k:"maintenance",label:"Monthly maintenance (₹)",type:"number",req:1},{k:"active",label:"Status",type:"select",options:["Active","Inactive"]}],
+    {...x,active:x.active===false?"Inactive":"Active"},async v=>{
+      v.maintenance=num(v.maintenance);v.active=v.active!=="Inactive";
+      if(S.flats.some(f=>f.id!==id&&String(f.flatNo).toLowerCase()===v.flatNo.toLowerCase()))throw new Error("Ye flat number pehle se hai");
+      if(id)await db.doc("flats/"+id).update(v);else await db.collection("flats").add(v);
+    });
+}
+function editStaff(id){
+  const x=id?S.staff.find(s=>s.id===id):{active:true};
+  openForm(id?"Edit Staff":"Add Staff",[{k:"name",label:"Name",req:1},{k:"designation",label:"Designation (Guard, Sweeper...)"},{k:"phone",label:"Phone"},
+    {k:"joinDate",label:"Joining date",type:"date"},{k:"salary",label:"Monthly salary (₹)",type:"number",req:1},{k:"active",label:"Status",type:"select",options:["Active","Inactive"]}],
+    {...x,active:x.active===false?"Inactive":"Active"},async v=>{
+      v.salary=num(v.salary);v.active=v.active!=="Inactive";
+      if(id)await db.doc("staff/"+id).update(v);else await db.collection("staff").add(v);
+    });
+}
+
+/* ---------- USERS (admin) ---------- */
+function rUsers(){
+  const u=[...S.users].sort((a,b)=>byName(a.name,b.name)),activeCount=u.filter(x=>x.active).length;
+  return `<div class="panel"><div class="ph"><h2>Users (${activeCount} active / ${MAX_USERS} max)</h2>
+   <button class="btn" ${u.length>=MAX_USERS?"disabled":""} onclick="addUser()">+ Add User</button></div>
+  <div class="tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>
+  ${u.map(x=>`<tr><td>${esc(x.name)}${x.id===ME.uid?" (you)":""}</td><td>${esc(x.email)}</td><td><span class="badge ${x.role==="admin"?"b-admin":""}" style="${x.role==="admin"?"background:var(--pri2)":"background:#eef1f4;color:var(--muted)"}">${x.role.toUpperCase()}</span></td>
+  <td>${x.active?'<span class="st st-Paid">Active</span>':'<span class="st st-Pending">Blocked</span>'}</td>
+  <td>${x.id===ME.uid?"":`<button class="btn sec sm" onclick="setUser('${x.id}',{role:'${x.role==="admin"?"viewer":"admin"}'})">Make ${x.role==="admin"?"Viewer":"Admin"}</button>
+   <button class="btn ${x.active?"red":"sec"} sm" onclick="setUser('${x.id}',{active:${!x.active}})">${x.active?"Block":"Unblock"}</button>`}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="note"><b>Admin</b> = sab kuch add/edit/delete. <b>Viewer</b> = sirf dekh sakta hai aur report download kar sakta hai. Block karne se user turant login nahi kar payega.</div></div>`;
+}
+function addUser(){
+  if(S.users.length>=MAX_USERS){toast("Max "+MAX_USERS+" users");return;}
+  openForm("Add User",[{k:"name",label:"Name",req:1},{k:"email",label:"Email",type:"email",req:1},{k:"password",label:"Password (min 6)",req:1},
+    {k:"role",label:"Role",type:"select",options:["viewer","admin"]}],{role:"viewer"},async v=>{
+      if(v.password.length<6)throw new Error("Password kam se kam 6 characters");
+      // second Firebase instance so admin stays logged in
+      const sec=firebase.apps.find(a=>a.name==="sec")||firebase.initializeApp(firebaseConfig,"sec");
+      try{
+        const cred=await sec.auth().createUserWithEmailAndPassword(v.email.trim(),v.password);
+        await db.doc("users/"+cred.user.uid).set({name:v.name,email:v.email.trim(),role:v.role,active:true,createdAt:Date.now(),createdBy:ME.name});
+        await sec.auth().signOut();
+        toast("User ban gaya. Email + password unhe share karein.");
+      }catch(e){
+        if(e.code==="auth/email-already-in-use")throw new Error("Ye email pehle se registered hai");
+        throw e;
+      }
+    });
+}
+async function setUser(id,patch){await db.doc("users/"+id).update(patch);toast("Updated");}
+
+/* ---------- SETTINGS (admin) ---------- */
+function rSettings(){
+  const st=S.settings,fy=fyOf(month);
+  return `<div class="panel" style="max-width:620px"><div class="ph"><h2>Settings</h2></div><div style="padding:0 14px 16px">
+   <label>Society / Building name</label><input id="sName" class="f" value="${esc(st.societyName)}">
+   <label>Address</label><input id="sAddr" class="f" value="${esc(st.address)}">
+   <div class="mrow"><div><label>Kis mahine se shuru kar rahe hain</label><input id="sStart" class="f" type="month" value="${st.startMonth||curMonth()}"></div>
+   <div><label>Us mahine ki shuruaat mein opening balance (₹, bank + cash)</label><input id="sOB" class="f" type="number" value="${num(st.openingBalance)}"></div></div>
+   <div class="note" style="padding:6px 0 0">Balance isi mahine se gina jayega. Isse pehle ke mahino ka hisaab balance mein nahi judega.</div>
+   <label>Expense categories (har line mein ek)</label><textarea id="sCats" class="f" rows="9">${esc(cats().join("\n"))}</textarea>
+   <div class="err" id="sErr"></div><button class="btn" onclick="saveSettings()">Save Settings</button></div></div>`;
+}
+async function saveSettings(){
+  const c=sCats.value.split("\n").map(x=>x.trim()).filter(Boolean);
+  if(!sStart.value){sErr.textContent="Shuru ka mahina chunein";return;}
+  try{await db.doc("settings/main").set({societyName:sName.value.trim(),address:sAddr.value.trim(),categories:c.length?c:DEFAULT_CATEGORIES,
+    startMonth:sStart.value,openingBalance:num(sOB.value)},{merge:true});toast("Settings saved");}
+  catch(e){sErr.textContent=e.message;}
+}
+
+/* ---------- generic ---------- */
+function delDoc(col,id){
+  modalRoot.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeForm()"><div class="modal" style="max-width:380px"><h3>Delete karein?</h3>
+   <p style="color:var(--muted);margin:6px 0 0">Ye record hamesha ke liye hat jayega.</p><div class="err" id="mErr"></div>
+   <div class="mfoot"><button class="btn sec" onclick="closeForm()">Cancel</button><button class="btn red" id="mDel">Haan, Delete</button></div></div></div>`;
+  mDel.onclick=async()=>{mDel.disabled=true;try{await db.doc(col+"/"+id).delete();closeForm();toast("Deleted");}catch(e){mErr.textContent=e.message;mDel.disabled=false;}};
+}
+function keepFocus(el){const k=el.dataset.k,pos=el.selectionStart;render();const n=document.querySelector(`[data-k="${k}"]`);if(n){n.focus();n.setSelectionRange(pos,pos);}}
+function openForm(title,fields,vals,onSave,calc){
+  const inp=f=>{const v=vals[f.k]??"";
+    if(f.type==="select")return `<select class="f" name="${f.k}">${f.options.map(o=>`<option ${String(v)===String(o)?"selected":""} value="${esc(o)}">${esc(o||"—")}</option>`).join("")}</select>`;
+    return `<input class="f" name="${f.k}" type="${f.type||"text"}" value="${esc(v)}" ${f.type==="number"?'step="any" min="0"':""}>`;};
+  modalRoot.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeForm()"><form class="modal" id="mForm"><h3>${esc(title)}</h3>
+   <div class="mrow">${fields.map(f=>`<div style="${f.full?"grid-column:1/-1":""}"><label>${esc(f.label)}${f.req?" *":""}</label>${inp(f)}</div>`).join("")}</div>
+   ${calc?'<div class="calc" id="mCalc"></div>':""}<div class="err" id="mErr"></div>
+   <div class="mfoot"><button type="button" class="btn sec" onclick="closeForm()">Cancel</button><button class="btn" id="mSave">Save</button></div></form></div>`;
+  const form=document.getElementById("mForm");
+  const read=()=>{const v={};fields.forEach(f=>v[f.k]=form.elements[f.k].value.trim());return v;};
+  if(calc){const u=()=>mCalc.textContent=calc(read());form.addEventListener("input",u);u();}
+  form.onsubmit=async e=>{e.preventDefault();const v=read();
+    const miss=fields.find(f=>f.req&&!v[f.k]);if(miss){mErr.textContent=miss.label+" zaroori hai";return;}
+    mSave.disabled=true;mSave.textContent="Saving...";
+    try{await onSave(v);closeForm();toast("Saved");}catch(err){mErr.textContent=err.message;mSave.disabled=false;mSave.textContent="Save";}};
+  form.elements[fields[0].k].focus();
+}
+function closeForm(){modalRoot.innerHTML="";}
+</script>
+</body>
+</html>
