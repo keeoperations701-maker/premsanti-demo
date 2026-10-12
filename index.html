@@ -89,7 +89,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
       <button class="btn sm sec" onclick="lEmail.value='admin@demo.com';lPass.value='admin123';doLogin()">Login</button><br>
       Viewer: <b>viewer@demo.com</b> / <b>viewer123</b>
       <button class="btn sm sec" onclick="lEmail.value='viewer@demo.com';lPass.value='viewer123';doLogin()">Login</button><br>
-      <a href="#" onclick="try{localStorage.removeItem('socDemoDB3')}catch(e){};location.reload();return false" style="color:var(--amb)">Sab data saaf karein (khaali shuru)</a><br>
+      <a href="#" onclick="try{localStorage.removeItem('socDemoDB3');localStorage.setItem('socDemoEmpty','1')}catch(e){};location.reload();return false" style="color:var(--amb)">Sab data saaf karein (khaali shuru)</a><br>
+      <a href="#" onclick="try{localStorage.removeItem('socDemoDB3')}catch(e){};location.reload();return false" style="color:var(--amb)">Shared data dobara load karein</a><br>
       <a href="#" onclick="try{localStorage.removeItem('socDemoDB3');localStorage.setItem('socDemoSample','1')}catch(e){};location.reload();return false" style="color:var(--amb)">Sample data load karein</a>
     </div>
   </div>
@@ -158,10 +159,18 @@ const PAY_MODES = ["Cash","UPI","Bank Transfer","Cheque"];
 const DEMO = firebaseConfig.apiKey === "PASTE_HERE";
 if (DEMO) window.firebase = (function(){
   const KEY="socDemoDB3", UKEY="socDemoUser";
-  let D=null,withSample=false;
-  try{D=JSON.parse(localStorage.getItem(KEY));withSample=localStorage.getItem("socDemoSample")==="1";localStorage.removeItem("socDemoSample");}catch(e){}
+  let D=null,withSample=false,noShared=false;
+  try{D=JSON.parse(localStorage.getItem(KEY));withSample=localStorage.getItem("socDemoSample")==="1";noShared=localStorage.getItem("socDemoEmpty")==="1";
+      localStorage.removeItem("socDemoSample");localStorage.removeItem("socDemoEmpty");}catch(e){}
   const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}};
-  if(!D||!D.cols){D=demoSeed(withSample);save();}
+  const firstOpen=!D||!D.cols;
+  if(firstOpen){D=demoSeed(withSample);save();}
+  // First open: if a data.json backup sits next to index.html (e.g. on GitHub Pages), load it once
+  if(firstOpen&&!withSample&&!noShared&&location.protocol.startsWith("http")){
+    fetch("data.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
+      if(j&&j.cols&&j.accounts){D=j;save();location.reload();}
+    }).catch(()=>{});
+  }
   const clone=o=>o===undefined?undefined:JSON.parse(JSON.stringify(o));
   const col=n=>D.cols[n]||(D.cols[n]={});
   const listeners=new Set();
@@ -209,6 +218,7 @@ if (DEMO) window.firebase = (function(){
   const apps=[];
   return {
     apps,
+    _demo:{exportJSON:()=>JSON.stringify(D,null,1),importData:j=>{D=j;save();}},
     initializeApp(cfg,name){const app={name:name||"[DEFAULT]",auth:()=>name?secAuth:mainAuth};apps.push(app);return app;},
     auth:()=>mainAuth,
     firestore:()=>({doc:docRef,collection:c=>query(c,[]),
@@ -799,7 +809,26 @@ function rSettings(){
    <div><label>Us mahine ki shuruaat mein opening balance (₹, bank + cash)</label><input id="sOB" class="f" type="number" value="${num(st.openingBalance)}"></div></div>
    <div class="note" style="padding:6px 0 0">Balance isi mahine se gina jayega. Isse pehle ke mahino ka hisaab balance mein nahi judega.</div>
    <label>Expense categories (har line mein ek)</label><textarea id="sCats" class="f" rows="9">${esc(cats().join("\n"))}</textarea>
-   <div class="err" id="sErr"></div><button class="btn" onclick="saveSettings()">Save Settings</button></div></div>`;
+   <div class="err" id="sErr"></div><button class="btn" onclick="saveSettings()">Save Settings</button></div></div>
+  ${DEMO?`<div class="panel" style="max-width:620px"><div class="ph"><h2>Demo data backup</h2></div><div style="padding:12px 14px 16px;line-height:1.6">
+   Apna saara data ek <b>data.json</b> file mein download karein. Ise GitHub par index.html ke saath upload karenge to link kholne wale ko pehli baar yahi data dikhega.
+   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+     <button class="btn" onclick="demoBackup()">Backup download (data.json)</button>
+     <label class="btn sec" style="margin:0;display:inline-block;color:var(--pri);font-size:14px">Backup upload<input type="file" accept=".json" style="display:none" onchange="demoRestore(this)"></label>
+   </div>
+   <div class="note" style="padding:8px 0 0">Note: data.json mein demo users ke password bhi hote hain. Asli password ya bank details demo mein na daalein.</div></div></div>`:""}`;
+}
+function demoBackup(){
+  const blob=new Blob([firebase._demo.exportJSON()],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="data.json";document.body.appendChild(a);a.click();a.remove();
+  toast("data.json download hua");
+}
+function demoRestore(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{try{const j=JSON.parse(rd.result);if(!j.cols||!j.accounts)throw 0;firebase._demo.importData(j);toast("Backup load hua");setTimeout(()=>location.reload(),600);}
+    catch(e){toast("Ye sahi backup file nahi hai");}};
+  rd.readAsText(f);
 }
 async function saveSettings(){
   const c=sCats.value.split("\n").map(x=>x.trim()).filter(Boolean);

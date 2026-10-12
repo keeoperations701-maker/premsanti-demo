@@ -1,0 +1,215 @@
+{
+ "cols": {
+  "users": {
+   "u1": {
+    "name": "Demo Admin",
+    "email": "admin@demo.com",
+    "role": "admin",
+    "active": true
+   },
+   "u2": {
+    "name": "Demo Viewer",
+    "email": "viewer@demo.com",
+    "role": "viewer",
+    "active": true
+   }
+  },
+  "meta": {
+   "bootstrap": {
+    "uid": "u1"
+   }
+  },
+  "settings": {
+   "main": {
+    "societyName": "PremSanti Apartment",
+    "address": "266 mehrauli",
+    "categories": [
+     "Electricity",
+     "Water",
+     "Security",
+     "Housekeeping",
+     "Lift Maintenance",
+     "Repairs",
+     "Garden",
+     "Generator / Diesel",
+     "Stationery",
+     "Miscellaneous"
+    ],
+    "openingBalances": {},
+    "startMonth": "2026-10",
+    "openingBalance": 300
+   }
+  },
+  "flats": {
+   "1ib1c045nz": {
+    "flatNo": "UGF 1",
+    "owner": "AARTI KUMARI",
+    "phone": "8527188936",
+    "maintenance": 700,
+    "active": true
+   },
+   "avp1bepd71": {
+    "flatNo": "UGF 2",
+    "owner": "A",
+    "phone": "",
+    "maintenance": 700,
+    "active": true
+   },
+   "rgg7ia1dwa": {
+    "flatNo": "UGF 3",
+    "owner": "",
+    "phone": "",
+    "maintenance": 700,
+    "active": true
+   },
+   "9bl372khq8": {
+    "flatNo": "UGF 4",
+    "owner": "",
+    "phone": "",
+    "maintenance": 700,
+    "active": true
+   }
+  },
+  "staff": {
+   "506mnuwri5": {
+    "name": "RACHNA KUMARI",
+    "designation": "EXECUTIVE",
+    "phone": "9650383716",
+    "joinDate": "2026-10-01",
+    "salary": 10000,
+    "active": true
+   }
+  },
+  "expenses": {
+   "t0mw098ai4": {
+    "date": "2026-10-12",
+    "category": "Repairs",
+    "description": "MOTER REPAIRS",
+    "vendor": "XYZ",
+    "amount": 500,
+    "mode": "Cash",
+    "billNo": "1234567",
+    "month": "2026-10",
+    "updatedBy": "Demo Admin",
+    "updatedAt": 1791825129369,
+    "createdAt": 1791825129369
+   }
+  },
+  "salaries": {
+   "2026-10_506mnuwri5": {
+    "month": "2026-10",
+    "staffId": "506mnuwri5",
+    "staffName": "RACHNA KUMARI",
+    "designation": "EXECUTIVE",
+    "basic": 10000,
+    "daysPresent": 31,
+    "bonus": 0,
+    "advance": 0,
+    "deduction": 0,
+    "status": "Partial",
+    "paidDate": "2026-10-12",
+    "mode": "UPI",
+    "remarks": "SHF;AHF;O",
+    "createdAt": 1791825171721,
+    "updatedBy": "Demo Admin",
+    "updatedAt": 1791825651855,
+    "payments": [
+     {
+      "date": "2026-10-12",
+      "amount": 2000,
+      "mode": "UPI",
+      "note": ""
+     },
+     {
+      "date": "2026-10-12",
+      "amount": 1000,
+      "mode": "Cash",
+      "note": ""
+     }
+    ]
+   }
+  },
+  "maintenance": {
+   "2026-10_1ib1c045nz": {
+    "month": "2026-10",
+    "flatId": "1ib1c045nz",
+    "flatNo": "UGF 1",
+    "owner": "AARTI KUMARI",
+    "due": 700,
+    "received": 700,
+    "date": "2026-10-12",
+    "mode": "UPI",
+    "txnId": "141516",
+    "receiptNo": "1234",
+    "remarks": "RECIVED",
+    "createdAt": 1791824839039,
+    "updatedBy": "Demo Admin",
+    "updatedAt": 1791824974506,
+    "advance": false
+   },
+   "2026-10_avp1bepd71": {
+    "month": "2026-10",
+    "flatId": "avp1bepd71",
+    "flatNo": "UGF 2",
+    "owner": "A",
+    "due": 700,
+    "received": 700,
+    "date": "2026-10-12",
+    "mode": "UPI",
+    "txnId": "",
+    "receiptNo": "",
+    "remarks": "",
+    "createdAt": 1791824839039,
+    "updatedBy": "Demo Admin",
+    "updatedAt": 1791825028677,
+    "advance": false
+   },
+   "2026-10_rgg7ia1dwa": {
+    "month": "2026-10",
+    "flatId": "rgg7ia1dwa",
+    "flatNo": "UGF 3",
+    "owner": "",
+    "due": 700,
+    "received": 700,
+    "date": "2026-10-12",
+    "mode": "UPI",
+    "txnId": "",
+    "receiptNo": "",
+    "remarks": "",
+    "createdAt": 1791824839039,
+    "updatedBy": "Demo Admin",
+    "updatedAt": 1791825032540,
+    "advance": false
+   },
+   "2026-10_9bl372khq8": {
+    "month": "2026-10",
+    "flatId": "9bl372khq8",
+    "flatNo": "UGF 4",
+    "owner": "",
+    "due": 700,
+    "received": 700,
+    "date": "2026-10-12",
+    "mode": "UPI",
+    "txnId": "",
+    "receiptNo": "",
+    "remarks": "",
+    "createdAt": 1791824839039,
+    "updatedBy": "Demo Admin",
+    "updatedAt": 1791825035458,
+    "advance": false
+   }
+  }
+ },
+ "accounts": {
+  "admin@demo.com": {
+   "uid": "u1",
+   "email": "admin@demo.com",
+   "pass": "admin123"
+  },
+  "viewer@demo.com": {
+   "uid": "u2",
+   "email": "viewer@demo.com",
+   "pass": "viewer123"
+  }
+ }
+}
